@@ -1,4 +1,4 @@
-from fastapi import FastAPI , Path
+from fastapi import FastAPI , Path , HTTPException 
 from typing import Optional
 from pydantic import BaseModel
 
@@ -20,7 +20,7 @@ def get_car_by_year(model: Optional[str] = None):
             return {"message": "Model parameter is required"}
         if cars[car]["model"].lower() == model.lower():
             return cars[car]
-    return {"message": "Car not found"}
+    raise HTTPException(status_code=404, detail="Car not found")
 
 
 
@@ -47,7 +47,7 @@ class UpdateItem(BaseModel):
 @app.put("/update/car")
 def update_car(item_id: int, item: UpdateItem):
     if item_id not in cars:
-        return {"message": "Item not found"}
+        raise HTTPException(status_code=404, detail="Item not found")
     
     if item.skuID is not None:
         cars[item_id]["skuID"] = item.skuID
@@ -59,3 +59,11 @@ def update_car(item_id: int, item: UpdateItem):
         cars[item_id]["year"] = item.year
     
     return cars[item_id]
+
+
+@app.delete("/delete-car/{item_id}")
+def delete_car(item_id: int = Path(description="ID of the car to delete")):
+    if item_id not in cars:
+        raise HTTPException(status_code=404, detail="Item not found")
+    deleted_item = cars.pop(item_id)
+    return {"message": "Item deleted successfully", "item": deleted_item}
